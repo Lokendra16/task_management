@@ -13,5 +13,8 @@ class TaskModel {
   @HiveField(2)
   final String priority;
 
-  TaskModel({required this.name, this.dueDate, required this.priority});
+  @HiveField(3)
+  bool isCompleted;
+
+  TaskModel({required this.name, this.dueDate, required this.priority,this.isCompleted = false});
 }

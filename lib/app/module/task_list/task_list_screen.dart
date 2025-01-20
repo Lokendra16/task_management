@@ -12,12 +12,17 @@ class TaskListScreen extends StatefulWidget {
 }
 
 class _TaskListScreenState extends State<TaskListScreen> {
+  final box = Hive.box<TaskModel>('tasks');
+
   List<TaskModel> taskList = [];
   ValueNotifier<bool> updateTaskList = ValueNotifier(false);
+  ValueNotifier<bool> updateCheckBox = ValueNotifier(false);
 
   @override
   void initState() {
-    fetchTaskList();
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      fetchTaskList();
+    });
     super.initState();
   }
 
@@ -78,26 +83,24 @@ class _TaskListScreenState extends State<TaskListScreen> {
                                         )
                                       ],
                                     ),
-                                      Row(
-                                        children: [
-                                          const Text(
-                                            "Due Date : ",
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                            ),
+                                    Row(
+                                      children: [
+                                        const Text(
+                                          "Due Date : ",
+                                          style: TextStyle(
+                                            fontSize: 16,
                                           ),
-                                          Expanded(
-                                            child: Text(
-                                              taskList[index].dueDate ?? "NA",
-                                              style: const TextStyle(
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            taskList[index].dueDate ?? "NA",
+                                            style: const TextStyle(
                                                 fontSize: 16,
-                                                color: Colors.black
-                                              ),
-                                            ),
-                                          )
-                                        ],
-                                      ),
-
+                                                color: Colors.black),
+                                          ),
+                                        )
+                                      ],
+                                    ),
                                     Row(
                                       children: [
                                         const Text(
@@ -114,6 +117,37 @@ class _TaskListScreenState extends State<TaskListScreen> {
                                             ),
                                           ),
                                         )
+                                      ],
+                                    ),
+                                    Row(
+                                      children: [
+                                        ValueListenableBuilder(
+                                            valueListenable: updateCheckBox,
+                                            builder: (context, value, child) {
+                                              return SizedBox(
+                                                height: 24,
+                                                width: 24,
+                                                child: Checkbox(
+                                                  value:
+                                                      taskList[index].isCompleted,
+                                                  onChanged: (bool? value) {
+                                                    taskList[index].isCompleted =
+                                                        value ?? false;
+                                                    updateCheckBox.value =
+                                                        !updateCheckBox.value;
+                                                    box.putAt(
+                                                        index, taskList[index]);
+                                                  },
+                                                ),
+                                              );
+                                            }),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete),
+                                          onPressed: () async {
+                                            await box.deleteAt(index);
+                                            fetchTaskList();
+                                          },
+                                        ),
                                       ],
                                     ),
                                   ],
@@ -133,8 +167,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
             context,
             MaterialPageRoute(builder: (context) => const AddTaskScreen()),
           );
+          debugPrint("result-->$result");
           if (result) {
-            fetchTaskList();
+            await fetchTaskList();
           }
         },
         child: const Icon(Icons.add),
@@ -144,8 +179,8 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
   Future<void> fetchTaskList() async {
     taskList.clear();
-    final box = Hive.box<TaskModel>('tasks');
     taskList = box.values.toList();
+    setState(() {});
     updateTaskList.value = !updateTaskList.value;
   }
 }
